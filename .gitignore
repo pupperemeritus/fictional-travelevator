@@ -135,12 +135,6 @@ built/
 *.zip
 *.tar.gz
 
-# Ignore test files
-tests/
-tests/cases/
-tests/services/
-test-args.txt
-
 # Ignore compiled files
 src/compiler/diagnosticInfo
 src/harness/*.js
