@@ -1,4 +1,4 @@
-from app.api import auth, destinations, itineraries, users
+from app.api import destinations, itineraries, users
 from app.config import settings
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +15,6 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(itineraries.router, prefix="/itineraries", tags=["Itineraries"])
 app.include_router(destinations.router, prefix="/destinations", tags=["Destinations"])
