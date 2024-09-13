@@ -49,7 +49,7 @@ export function useSupabaseAuth() {
                 password,
             });
             if (error) throw error;
-            return data;
+            return user;
         } catch (err) {
             setError(
                 err instanceof Error
@@ -69,7 +69,7 @@ export function useSupabaseAuth() {
                 provider: "google",
             });
             if (error) throw error;
-            return data;
+            return user;
         } catch (err) {
             setError(
                 err instanceof Error
