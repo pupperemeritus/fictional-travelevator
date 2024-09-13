@@ -1,11 +1,11 @@
-from app.models.destinations import Destination
-from langchain.vectorstores import Chroma
-from langchain_ollama.embeddings import OllamaEmbeddings
+from app.models.destination import Destination
+from langchain_chroma import Chroma
+from langchain_ollama import OllamaEmbeddings
 
 
 class VectorStoreService:
-    def __init__(self):
-        self.embeddings = OllamaEmbeddings()
+    def __init__(self, model_name: str = "all-minilm"):
+        self.embeddings = OllamaEmbeddings(model=model_name)
         self.vector_store = Chroma(
             embedding_function=self.embeddings, persist_directory="./chroma_db"
         )

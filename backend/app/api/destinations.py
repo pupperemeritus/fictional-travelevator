@@ -1,24 +1,28 @@
 from typing import List
-
-from app.models.destinations import Destination, DestinationCreate, DestinationUpdate
-from app.models.user import User
+from fastapi import APIRouter, HTTPException, Request
+from app.models.destination import Destination, DestinationCreate, DestinationUpdate
 from app.services.supabase_client import supabase_client_manager
-from app.utils.security import get_current_user
-from fastapi import APIRouter, Depends, HTTPException
+from app.services.vector_store import vector_store_service
 
 router = APIRouter()
 supabase_client = supabase_client_manager.get_client()
 
 
 @router.post("/", response_model=Destination)
-async def create_destination(
-    destination: DestinationCreate, current_user: User = Depends(get_current_user)
-):
+async def create_destination(destination: DestinationCreate, request: Request):
     try:
+        user_id = request.headers.get("user-id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
         new_destination = (
-            supabase_client.table("destinations").insert(destination.dict()).execute()
+            supabase_client.table("destinations")
+            .insert(destination.model_dump())
+            .execute()
         )
-        return Destination(**new_destination.data[0])
+        created_destination = Destination(**new_destination.data[0])
+        vector_store_service.add_destination(created_destination)
+        return created_destination
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -50,14 +54,16 @@ async def read_destination(destination_id: str):
 
 @router.put("/{destination_id}", response_model=Destination)
 async def update_destination(
-    destination_id: str,
-    destination_update: DestinationUpdate,
-    current_user: User = Depends(get_current_user),
+    destination_id: str, destination_update: DestinationUpdate, request: Request
 ):
     try:
+        user_id = request.headers.get("user-id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
         updated_destination = (
             supabase_client.table("destinations")
-            .update(destination_update.dict(exclude_unset=True))
+            .update(destination_update.model_dump(exclude_unset=True))
             .eq("id", destination_id)
             .execute()
         )
@@ -69,10 +75,12 @@ async def update_destination(
 
 
 @router.delete("/{destination_id}", status_code=204)
-async def delete_destination(
-    destination_id: str, current_user: User = Depends(get_current_user)
-):
+async def delete_destination(destination_id: str, request: Request):
     try:
+        user_id = request.headers.get("user-id")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Unauthorized")
+
         deleted = (
             supabase_client.table("destinations")
             .delete()
