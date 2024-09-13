@@ -1,12 +1,13 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ItineraryList } from "@/components/ItineraryList";
 import { ItineraryForm } from "@/components/ItineraryForm";
 import { useSupabaseAuth } from "@/hooks/useSupabaseAuth";
+import Login from "@/components/Login";
 
 export default function Home() {
     const {
-        user,
+        user: authUser,
         loading,
         error,
         signIn,
@@ -16,6 +17,19 @@ export default function Home() {
         signUpWithGoogle,
     } = useSupabaseAuth();
 
+    const [user, setUser] = useState(authUser);
+
+    useEffect(() => {
+        if (authUser) {
+            setUser(authUser);
+        }
+    }, [authUser]);
+
+    const handleLogin = (loggedInUser: any) => {
+        // Update user state when the user logs in
+        setUser(loggedInUser);
+    };
+
     if (loading) {
         return <div>Loading...</div>;
     }
@@ -23,14 +37,11 @@ export default function Home() {
     if (error) {
         return <div>Error: {error}</div>;
     }
+
     if (!user) {
-        return (
-            <div>
-                <h1>Please log in to access this page</h1>
-                <button onClick={signInWithGoogle}>Log in with Google</button>
-            </div>
-        );
+        return <Login onLogin={handleLogin} />; // Render Login component when not logged in
     }
+
     return (
         <div className="container mx-auto p-4">
             <header className="flex justify-between items-center mb-8">
