@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useSupabaseAuth } from "./useSupabaseAuth";
 
 interface UserPreferences {
     interests: string[];
@@ -32,6 +33,12 @@ interface Itinerary {
 export function useItineraryApi() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const { user } = useSupabaseAuth();
+
+    const headers = {
+        "Content-Type": "application/json",
+        "user-id": user?.id || "",
+    };
 
     const generateItinerary = async (
         userPreferences: UserPreferences,
@@ -44,9 +51,7 @@ export function useItineraryApi() {
         try {
             const response = await fetch("/itineraries/generate", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers,
                 body: JSON.stringify({
                     user_preferences: userPreferences,
                     destinations,
@@ -69,6 +74,7 @@ export function useItineraryApi() {
             setLoading(false);
         }
     };
+
     const getItineraries = async (): Promise<Itinerary[] | null> => {
         setLoading(true);
         setError(null);
@@ -76,6 +82,7 @@ export function useItineraryApi() {
         try {
             const response = await fetch("/itineraries", {
                 method: "GET",
+                headers,
             });
 
             if (!response.ok) {
@@ -93,14 +100,20 @@ export function useItineraryApi() {
             setLoading(false);
         }
     };
+
     const deleteItinerary = async (id: string): Promise<void> => {
         setLoading(true);
         setError(null);
 
         try {
-            await fetch(`/itineraries/${id}`, {
+            const response = await fetch(`/itineraries/${id}`, {
                 method: "DELETE",
+                headers,
             });
+
+            if (!response.ok) {
+                throw new Error("Failed to delete itinerary");
+            }
         } catch (err) {
             setError(
                 err instanceof Error ? err.message : "An unknown error occurred"
