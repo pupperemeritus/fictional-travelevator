@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { createClient, User, AuthError } from "@supabase/supabase-js";
+import { createClient, User, Session } from "@supabase/supabase-js";
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +9,7 @@ const supabase = createClient(
 
 export function useSupabaseAuth() {
     const [user, setUser] = useState<User | null>(null);
+    const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -20,8 +21,9 @@ export function useSupabaseAuth() {
             } = await supabase.auth.getSession();
             if (error) {
                 setError(error.message);
-            } else {
-                setUser(session?.user ?? null);
+            } else if (session) {
+                setUser(session.user);
+                setSession(session);
             }
             setLoading(false);
         };
@@ -31,6 +33,7 @@ export function useSupabaseAuth() {
         const { data: authListener } = supabase.auth.onAuthStateChange(
             async (event, session) => {
                 setUser(session?.user ?? null);
+                setSession(session);
                 setLoading(false);
             }
         );
@@ -49,7 +52,7 @@ export function useSupabaseAuth() {
                 password,
             });
             if (error) throw error;
-            return user;
+            return data.user;
         } catch (err) {
             setError(
                 err instanceof Error
@@ -69,7 +72,7 @@ export function useSupabaseAuth() {
                 provider: "google",
             });
             if (error) throw error;
-            return user;
+            return data;
         } catch (err) {
             setError(
                 err instanceof Error
@@ -132,7 +135,7 @@ export function useSupabaseAuth() {
             if (!data) {
                 throw new Error("User not found");
             }
-            return user;
+            return data;
         } catch (err) {
             setError(
                 err instanceof Error
@@ -143,8 +146,10 @@ export function useSupabaseAuth() {
             setLoading(false);
         }
     };
+
     return {
         user,
+        session,
         loading,
         error,
         signIn,
