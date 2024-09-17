@@ -1,8 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional
-
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class TripStatus(str, Enum):
@@ -10,6 +9,21 @@ class TripStatus(str, Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
+
+
+class ItineraryTheme(str, Enum):
+    ADVENTURE = "adventure"
+    CULTURAL = "cultural"
+    RELAXATION = "relaxation"
+    FOOD_AND_WINE = "food_and_wine"
+    HISTORICAL = "historical"
+    NATURE = "nature"
+
+
+class FlexibilityLevel(str, Enum):
+    RIGID = "rigid"
+    FLEXIBLE = "flexible"
+    VERY_FLEXIBLE = "very_flexible"
 
 
 class DestinationInItinerary(BaseModel):
@@ -35,6 +49,23 @@ class ItineraryBase(BaseModel):
     total_budget: float = Field(..., ge=0)
     destinations: List[DestinationInItinerary]
     status: TripStatus = TripStatus.PLANNING
+    theme: ItineraryTheme = Field(..., description="Theme of the itinerary")
+    flexibility: FlexibilityLevel = Field(
+        ..., description="How flexible the itinerary is"
+    )
+    sustainability_score: float = Field(
+        ..., ge=0, le=10, description="Eco-friendliness rating out of 10"
+    )
+
+    @field_validator("end_date")
+    def end_date_after_start_date(cls, v, values):
+        if "start_date" in values and v <= values["start_date"]:
+            raise ValueError("end_date must be after start_date")
+        return v
+
+    @field_validator("sustainability_score")
+    def validate_sustainability_score(cls, v):
+        return round(v, 1)
 
 
 class ItineraryCreate(ItineraryBase):
@@ -48,6 +79,9 @@ class ItineraryUpdate(BaseModel):
     total_budget: Optional[float] = Field(None, ge=0)
     destinations: Optional[List[DestinationInItinerary]] = None
     status: Optional[TripStatus] = None
+    theme: Optional[ItineraryTheme] = None
+    flexibility: Optional[FlexibilityLevel] = None
+    sustainability_score: Optional[float] = Field(None, ge=0, le=10)
 
 
 class ItineraryInDB(ItineraryBase):
